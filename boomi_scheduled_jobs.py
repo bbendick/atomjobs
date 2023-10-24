@@ -20,7 +20,7 @@ def getJobs(atomId):
 
     return
 
-st.sidebar.title('PAT Boomi - Scheduled Jobs')
+st.sidebar.title('Boomi - Scheduled Jobs')
 st.sidebar.button('prod-trellis-molecule', on_click=getJobs, args=['eea33c78-01ad-4ebb-a511-b9c8bd0ea16a'])
 st.sidebar.button('prod-trellis-atom', on_click=getJobs, args=['cdcca9c9-0797-4934-9b83-6e127385ef7f'])
 st.sidebar.button('nonprod-qa-atom', on_click=getJobs, args=['81b83d93-cdcc-4801-ad79-d3557295b960'])
