@@ -31,6 +31,7 @@ st.sidebar.button('prod-trellis-molecule', on_click=getJobs, type="primary", arg
 st.sidebar.button('prod-trellis-atom', on_click=getJobs, type="primary", args=['cdcca9c9-0797-4934-9b83-6e127385ef7f', 'Prod Atom'])
 st.sidebar.button('nonprod-qa-molecule', on_click=getJobs, type="primary", args=['76a40e65-b51a-4378-a48f-8ff4f7a90674', 'QA Molecule'])
 st.sidebar.button('nonprod-qa-atom', on_click=getJobs, type="primary", args=['81b83d93-cdcc-4801-ad79-d3557295b960', 'QA Atom'])
+st.sidebar.button('sandbox-molecule', on_click=getJobs, type="primary", args=['c0ce5484-2ade-4689-9fa1-ce1304d8cdd1', 'Sandbox Molecule'])
 st.sidebar.button('Clear Cache', on_click=clear_cache)
 
 
