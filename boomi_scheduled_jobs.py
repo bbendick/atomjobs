@@ -19,7 +19,7 @@ def getJobs(atomId, label):
     if len(r.content) > 5:
         # Create a database session object that points to the URL.
         df = pd.DataFrame.from_dict(r.json())
-        st.dataframe(data=df.style.applymap(color_enabled, subset=['enabled']), column_order=('Name','enabled','hours','minutes','daysOfWeek','daysOfMonth','months','years','cron'), use_container_width=True, height=None)
+        st.dataframe(data=df.style.applymap(color_enabled, subset=['enabled']), column_order=('Name','enabled','id','hours','minutes','daysOfWeek','daysOfMonth','months','years','cron'), use_container_width=True, height=None)
 
     else:
         st.text('No jobs scheduled')
