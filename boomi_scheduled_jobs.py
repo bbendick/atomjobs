@@ -28,8 +28,7 @@ def getJobs(atomId, label):
 
 st.sidebar.title('Boomi - Scheduled Jobs')
 st.sidebar.button('prod-trellis-molecule', on_click=getJobs, type="primary", args=['3d78acc2-9f2b-41ff-bbfd-a3f2ed30c89e', 'Prod Molecule'])
-st.sidebar.button('nonprod-qa-molecule', on_click=getJobs, type="primary", args=['76a40e65-b51a-4378-a48f-8ff4f7a90674', 'QA Molecule'])
-st.sidebar.button('nonprod-qa-atom', on_click=getJobs, type="primary", args=['208de5f1-9e58-4eb6-ad4f-9d778af8ac2c', 'QA Atom'])
-st.sidebar.button('sandbox-molecule', on_click=getJobs, type="primary", args=['c0ce5484-2ade-4689-9fa1-ce1304d8cdd1', 'Sandbox Molecule'])
+st.sidebar.button('nonprod-qa-atom', on_click=getJobs, type="primary", args=['58e8640c-7dcd-44fc-8308-a1f0239fc789', 'QA Atom'])
+st.sidebar.button('sandbox-atom', on_click=getJobs, type="primary", args=['4e7219c4-fb66-40b5-ab23-0a5c9a32b5b1', 'Sandbox Atom'])
 st.sidebar.button('Clear Cache', on_click=clear_cache)
 
