@@ -120,16 +120,21 @@ def create_timeline_view(jobs, job_type="Scheduled"):
         st.write(f"**{time_str}**")
         
         # Create columns for job status boxes
-        cols = st.columns(min(len(jobs_at_time), 4))
-        
-        for idx, job in enumerate(jobs_at_time):
-            col_idx = idx % 4
-            with cols[col_idx]:
+        for job in jobs_at_time:
+            col1, col2 = st.columns([0.95, 0.05])
+            
+            with col1:
                 status_color = "🟢" if is_job_enabled(job) else "🔴"
                 job_name = job['Name'][:30] + "..." if len(job['Name']) > 30 else job['Name']
                 # Add full name as tooltip using title attribute
                 full_name = job['Name']
                 st.markdown(f'<div title="{full_name}">{status_color} {job_name}</div>', unsafe_allow_html=True)
+            
+            with col2:
+                # Copy button for the full job name
+                if st.button("📋", key=f"copy_scheduled_{job.get('id', '')}_timeline", 
+                           help="Copy full job name", type="secondary"):
+                    st.code(job['Name'])
         
         st.write("---")
 
@@ -252,17 +257,22 @@ def create_recurring_timeline_view(jobs):
         
         st.write(f"**{pattern}**")
         
-        # Create columns for job status boxes
-        cols = st.columns(min(len(jobs_in_pattern), 3))
-        
-        for idx, job in enumerate(jobs_in_pattern):
-            col_idx = idx % 3
-            with cols[col_idx]:
+        # Create individual rows for each job with copy button
+        for job in jobs_in_pattern:
+            col1, col2 = st.columns([0.95, 0.05])
+            
+            with col1:
                 status_color = "🟢" if is_job_enabled(job) else "🔴"
                 job_name = job['Name'][:40] + "..." if len(job['Name']) > 40 else job['Name']
                 # Add full name as tooltip
                 full_name = job['Name']
                 st.markdown(f'<div title="{full_name}">{status_color} {job_name}</div>', unsafe_allow_html=True)
+            
+            with col2:
+                # Copy button for the full job name
+                if st.button("📋", key=f"copy_recurring_{job.get('id', '')}_timeline", 
+                           help="Copy full job name", type="secondary"):
+                    st.code(job['Name'])
         
         st.write("---")
 
