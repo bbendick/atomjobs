@@ -152,9 +152,13 @@ def parse_recurring_pattern_description(job):
                 start_hour = int(parts[0])
                 end_hour = int(parts[1])
                 
+                # Convert UTC to MST
+                start_mst, _ = convert_utc_to_mst(start_hour, 0)
+                end_mst, _ = convert_utc_to_mst(end_hour, 59)
+                
                 # Convert to 12-hour format for description
-                start_12h = format_time_12hour(start_hour, 0).split(':')[0] + format_time_12hour(start_hour, 0)[-2:]
-                end_12h = format_time_12hour(end_hour, 59).split(':')[0] + format_time_12hour(end_hour, 59)[-2:]
+                start_12h = format_time_12hour(start_mst, 0).split(':')[0] + format_time_12hour(start_mst, 0)[-2:]
+                end_12h = format_time_12hour(end_mst, 59).split(':')[0] + format_time_12hour(end_mst, 59)[-2:]
                 hour_desc = f"from {start_12h} to {end_12h}"
             except ValueError:
                 # Fallback for unparseable patterns
@@ -164,7 +168,10 @@ def parse_recurring_pattern_description(job):
     else:
         try:
             hour_val = int(hours_str)
-            hour_desc = f"at {hour_val} o'clock"
+            # Convert UTC to MST
+            mst_hour, _ = convert_utc_to_mst(hour_val, 0)
+            hour_12h = format_time_12hour(mst_hour, 0).split(':')[0] + format_time_12hour(mst_hour, 0)[-2:]
+            hour_desc = f"at {hour_12h}"
         except ValueError:
             hour_desc = f"during hours {hours_str}"
     
@@ -179,18 +186,6 @@ def parse_recurring_pattern_description(job):
             
             if interval == 1:
                 minute_desc = "once a minute"
-            elif interval == 2:
-                minute_desc = "once every two minutes"
-            elif interval == 5:
-                minute_desc = "once every five minutes"
-            elif interval == 10:
-                minute_desc = "once every ten minutes"
-            elif interval == 15:
-                minute_desc = "once every fifteen minutes"
-            elif interval == 30:
-                minute_desc = "once every thirty minutes"
-            elif interval == 60:
-                minute_desc = "once an hour"
             else:
                 minute_desc = f"once every {interval} minutes"
         except ValueError:
@@ -206,10 +201,15 @@ def parse_recurring_pattern_description(job):
         else:
             minute_desc = f"at {len(mins)} specific times"
     else:
-        # Single minute value
+        # Single minute value - handle special cases
         try:
             min_val = int(minutes_str)
-            minute_desc = f"at minute {min_val}"
+            if min_val == 0:
+                minute_desc = "hourly"
+            elif min_val == 30:
+                minute_desc = "every 30 minutes"
+            else:
+                minute_desc = f"at minute {min_val}"
         except ValueError:
             minute_desc = f"with minute pattern {minutes_str}"
     
@@ -219,6 +219,10 @@ def parse_recurring_pattern_description(job):
             return "Once a minute"
         elif minute_desc.startswith("once every"):
             return minute_desc.capitalize()
+        elif minute_desc == "hourly":
+            return "Hourly"
+        elif minute_desc == "every 30 minutes":
+            return "Every 30 minutes"
         else:
             return f"{minute_desc.capitalize()} {hour_desc}"
     else:
@@ -226,6 +230,10 @@ def parse_recurring_pattern_description(job):
             return f"Once a minute {hour_desc}"
         elif minute_desc.startswith("once every"):
             return f"{minute_desc.capitalize()} {hour_desc}"
+        elif minute_desc == "hourly":
+            return f"Hourly {hour_desc}"
+        elif minute_desc == "every 30 minutes":
+            return f"Every 30 minutes {hour_desc}"
         else:
             return f"{minute_desc.capitalize()} {hour_desc}"
 
