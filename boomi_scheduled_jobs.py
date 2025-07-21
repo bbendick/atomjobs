@@ -7,7 +7,11 @@ from collections import defaultdict
 import pytz
 
 def color_enabled(val):
-    color = 'green' if val == True else 'red'
+    # Handle both boolean and string values
+    if isinstance(val, str):
+        color = 'green' if val.lower() == 'true' else 'red'
+    else:
+        color = 'green' if val == True else 'red'
     return f'background-color: {color}'
 
 def clear_cache():
@@ -121,7 +125,7 @@ def create_timeline_view(jobs, job_type="Scheduled"):
         for idx, job in enumerate(jobs_at_time):
             col_idx = idx % 4
             with cols[col_idx]:
-                status_color = "🟢" if job['enabled'] == True else "🔴"
+                status_color = "🟢" if is_job_enabled(job) else "🔴"
                 job_name = job['Name'][:30] + "..." if len(job['Name']) > 30 else job['Name']
                 # Add full name as tooltip using title attribute
                 full_name = job['Name']
@@ -159,7 +163,7 @@ def create_recurring_timeline_view(jobs):
         for idx, job in enumerate(jobs_in_pattern):
             col_idx = idx % 3
             with cols[col_idx]:
-                status_color = "🟢" if job['enabled'] == True else "🔴"
+                status_color = "🟢" if is_job_enabled(job) else "🔴"
                 job_name = job['Name'][:40] + "..." if len(job['Name']) > 40 else job['Name']
                 # Add full name as tooltip
                 full_name = job['Name']
@@ -167,11 +171,25 @@ def create_recurring_timeline_view(jobs):
         
         st.write("---")
 
+def is_job_enabled(job):
+    """Check if a job is enabled, handling both string and boolean values"""
+    enabled_val = job.get('enabled', False)
+    if isinstance(enabled_val, str):
+        return enabled_val.lower() == 'true'
+    return bool(enabled_val)
+
 def show_job_statistics(df):
     """Display job statistics dashboard"""
     total_jobs = len(df)
-    enabled_jobs = len(df[df['enabled'] == True])
-    disabled_jobs = len(df[df['enabled'] == False])
+    enabled_jobs = 0
+    disabled_jobs = 0
+    
+    # Count enabled/disabled properly
+    for _, job in df.iterrows():
+        if is_job_enabled(job):
+            enabled_jobs += 1
+        else:
+            disabled_jobs += 1
     
     recurring_jobs, scheduled_jobs = categorize_jobs(df)
     
