@@ -314,16 +314,22 @@ def show_job_statistics(df):
 
 
 @st.cache_data
-def getJobs(atomId, label):
-    """Fetch jobs from API and display both table and timeline views"""
+def fetchJobData(atomId):
+    """Fetch jobs data from API - no UI components"""
     r = requests.get('https://api.qa.trellis.arizona.edu/ws/rest/v1/util/getScheduledJobs/' + atomId) 
-
-    st.header(f"📋 {label}")
     
     if len(r.content) > 5:
-        # Create DataFrame
-        df = pd.DataFrame.from_dict(r.json())
-        
+        return pd.DataFrame.from_dict(r.json())
+    else:
+        return pd.DataFrame()
+
+def displayJobs(atomId, label):
+    """Display jobs with all UI components - not cached"""
+    df = fetchJobData(atomId)
+    
+    st.header(f"📋 {label}")
+    
+    if not df.empty:
         # Show statistics dashboard
         show_job_statistics(df)
         st.write("---")
@@ -372,7 +378,7 @@ def getJobs(atomId, label):
     else:
         st.warning('⚠️ No jobs scheduled')
 
-    return df if len(r.content) > 5 else pd.DataFrame()
+    return df
 
 # Streamlit App Layout
 st.set_page_config(page_title="Boomi Job Scheduler", page_icon="⚙️", layout="wide")
@@ -418,11 +424,11 @@ if 'selected_env' not in st.session_state:
     st.session_state.selected_env = None
 
 if st.session_state.selected_env == 'prod':
-    getJobs('3d78acc2-9f2b-41ff-bbfd-a3f2ed30c89e', 'Production Molecule')
+    displayJobs('3d78acc2-9f2b-41ff-bbfd-a3f2ed30c89e', 'Production Molecule')
 elif st.session_state.selected_env == 'qa':
-    getJobs('58e8640c-7dcd-44fc-8308-a1f0239fc789', 'QA Atom')
+    displayJobs('58e8640c-7dcd-44fc-8308-a1f0239fc789', 'QA Atom')
 elif st.session_state.selected_env == 'sandbox':
-    getJobs('4e7219c4-fb66-40b5-ab23-0a5c9a32b5b1', 'Sandbox Atom')
+    displayJobs('4e7219c4-fb66-40b5-ab23-0a5c9a32b5b1', 'Sandbox Atom')
 else:
     st.info("👆 Select an environment from the sidebar to view scheduled jobs")
     
