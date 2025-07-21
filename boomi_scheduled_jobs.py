@@ -133,6 +133,85 @@ def create_timeline_view(jobs, job_type="Scheduled"):
         
         st.write("---")
 
+def parse_recurring_pattern_description(job):
+    """Parse recurring job patterns into human-readable descriptions"""
+    hours_str = str(job.get('hours', '*'))
+    minutes_str = str(job.get('minutes', '0'))
+    
+    # Parse hour ranges
+    if hours_str == '*' or hours_str == '0-23':
+        hour_desc = "all day"
+        start_hour = 0
+        end_hour = 23
+    elif '-' in hours_str:
+        parts = hours_str.split('-')
+        if len(parts) == 2:
+            start_hour = int(parts[0])
+            end_hour = int(parts[1])
+            
+            # Convert to 12-hour format for description
+            start_12h = format_time_12hour(start_hour, 0).split(':')[0] + format_time_12hour(start_hour, 0)[-2:]
+            end_12h = format_time_12hour(end_hour, 59).split(':')[0] + format_time_12hour(end_hour, 59)[-2:]
+            hour_desc = f"from {start_12h} to {end_12h}"
+        else:
+            hour_desc = f"during hours {hours_str}"
+    else:
+        hour_desc = f"at {hours_str} o'clock"
+    
+    # Parse minute patterns
+    if minutes_str == '*':
+        minute_desc = "every minute"
+    elif '/' in minutes_str:
+        # Handle patterns like "0-59/2", "0-59/30", etc.
+        base, interval = minutes_str.split('/')
+        interval = int(interval)
+        
+        if interval == 1:
+            minute_desc = "once a minute"
+        elif interval == 2:
+            minute_desc = "once every two minutes"
+        elif interval == 5:
+            minute_desc = "once every five minutes"
+        elif interval == 10:
+            minute_desc = "once every ten minutes"
+        elif interval == 15:
+            minute_desc = "once every fifteen minutes"
+        elif interval == 30:
+            minute_desc = "once every thirty minutes"
+        elif interval == 60:
+            minute_desc = "once an hour"
+        else:
+            minute_desc = f"once every {interval} minutes"
+    elif '-' in minutes_str:
+        # Handle ranges like "0-30"
+        minute_desc = f"every minute during {minutes_str}"
+    elif ',' in minutes_str:
+        # Handle specific minutes like "0,15,30,45"
+        mins = minutes_str.split(',')
+        if len(mins) <= 3:
+            minute_desc = f"at minutes {minutes_str}"
+        else:
+            minute_desc = f"at {len(mins)} specific times"
+    else:
+        # Single minute value
+        minute_desc = f"at minute {minutes_str}"
+    
+    # Combine descriptions intelligently
+    if hour_desc == "all day":
+        if minute_desc.startswith("once a minute"):
+            return "Once a minute"
+        elif minute_desc.startswith("once every"):
+            return minute_desc.capitalize()
+        else:
+            return f"{minute_desc.capitalize()} {hour_desc}"
+    else:
+        if minute_desc.startswith("once a minute"):
+            return f"Once a minute {hour_desc}"
+        elif minute_desc.startswith("once every"):
+            return f"{minute_desc.capitalize()} {hour_desc}"
+        else:
+            return f"{minute_desc.capitalize()} {hour_desc}"
+
 def create_recurring_timeline_view(jobs):
     """Create timeline visualization for recurring jobs"""
     if not jobs:
@@ -141,18 +220,34 @@ def create_recurring_timeline_view(jobs):
     st.subheader("Recurring/Continuous Jobs (MST)")
     st.write("*Jobs that run frequently (>8 times/day or with step intervals)*")
     
-    # Group recurring jobs by their pattern
+    # Group recurring jobs by their human-readable pattern
     pattern_groups = defaultdict(list)
     
     for job in jobs:
-        # Group by hour pattern for recurring jobs
-        hours_str = str(job.get('hours', '*'))
-        minutes_str = str(job.get('minutes', '0'))
-        pattern = f"{hours_str} (every {minutes_str} min)" if '/' in minutes_str else f"Hours: {hours_str}"
-        pattern_groups[pattern].append(job)
+        pattern_desc = parse_recurring_pattern_description(job)
+        pattern_groups[pattern_desc].append(job)
     
-    # Sort patterns
-    for pattern in sorted(pattern_groups.keys()):
+    # Sort patterns by frequency (more frequent first)
+    def get_frequency_score(pattern):
+        if "once a minute" in pattern.lower():
+            return 1000
+        elif "once every two minutes" in pattern.lower():
+            return 500
+        elif "once every" in pattern.lower() and "minutes" in pattern.lower():
+            # Extract number for sorting
+            import re
+            numbers = re.findall(r'\d+', pattern)
+            if numbers:
+                return 1000 / int(numbers[0])
+            return 100
+        elif "once every" in pattern.lower() and "hour" in pattern.lower():
+            return 10
+        else:
+            return 1
+    
+    sorted_patterns = sorted(pattern_groups.keys(), key=get_frequency_score, reverse=True)
+    
+    for pattern in sorted_patterns:
         jobs_in_pattern = pattern_groups[pattern]
         
         st.write(f"**{pattern}**")
