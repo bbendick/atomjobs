@@ -123,7 +123,47 @@ def create_timeline_view(jobs, job_type="Scheduled"):
             with cols[col_idx]:
                 status_color = "🟢" if job['enabled'] else "🔴"
                 job_name = job['Name'][:30] + "..." if len(job['Name']) > 30 else job['Name']
-                st.write(f"{status_color} {job_name}")
+                # Add full name as tooltip using title attribute
+                full_name = job['Name']
+                st.markdown(f'<div title="{full_name}">{status_color} {job_name}</div>', unsafe_allow_html=True)
+        
+        st.write("---")
+
+def create_recurring_timeline_view(jobs):
+    """Create timeline visualization for recurring jobs"""
+    if not jobs:
+        return
+    
+    st.subheader("Recurring/Continuous Jobs (MST)")
+    st.write("*Jobs that run frequently (>8 times/day or with step intervals)*")
+    
+    # Group recurring jobs by their pattern
+    pattern_groups = defaultdict(list)
+    
+    for job in jobs:
+        # Group by hour pattern for recurring jobs
+        hours_str = str(job.get('hours', '*'))
+        minutes_str = str(job.get('minutes', '0'))
+        pattern = f"{hours_str} (every {minutes_str} min)" if '/' in minutes_str else f"Hours: {hours_str}"
+        pattern_groups[pattern].append(job)
+    
+    # Sort patterns
+    for pattern in sorted(pattern_groups.keys()):
+        jobs_in_pattern = pattern_groups[pattern]
+        
+        st.write(f"**{pattern}**")
+        
+        # Create columns for job status boxes
+        cols = st.columns(min(len(jobs_in_pattern), 3))
+        
+        for idx, job in enumerate(jobs_in_pattern):
+            col_idx = idx % 3
+            with cols[col_idx]:
+                status_color = "🟢" if job['enabled'] else "🔴"
+                job_name = job['Name'][:40] + "..." if len(job['Name']) > 40 else job['Name']
+                # Add full name as tooltip
+                full_name = job['Name']
+                st.markdown(f'<div title="{full_name}">{status_color} {job_name}</div>', unsafe_allow_html=True)
         
         st.write("---")
 
@@ -148,34 +188,7 @@ def show_job_statistics(df):
     with col5:
         st.metric("Scheduled", len(scheduled_jobs))
 
-def show_operational_insights(df):
-    """Show operational insights"""
-    with st.expander("🔍 Operational Insights"):
-        enabled_ratio = len(df[df['enabled'] == True]) / len(df)
-        
-        if enabled_ratio > 0.9:
-            st.success("✅ System Health: Excellent - Most jobs are enabled and running")
-        elif enabled_ratio > 0.7:
-            st.warning("⚠️ System Health: Good - Some jobs may need attention")
-        else:
-            st.error("🚨 System Health: Needs Attention - Many jobs are disabled")
-        
-        # Peak hours analysis
-        all_times = []
-        for _, job in df.iterrows():
-            if job['enabled']:
-                times = parse_job_schedule(job)
-                all_times.extend(times)
-        
-        if all_times:
-            hour_counts = defaultdict(int)
-            for hour, _ in all_times:
-                mst_hour, _ = convert_utc_to_mst(hour, 0)
-                hour_counts[mst_hour] += 1
-            
-            peak_hour = max(hour_counts, key=hour_counts.get)
-            peak_time = format_time_12hour(peak_hour, 0).split(':')[0] + ":XX " + format_time_12hour(peak_hour, 0).split(' ')[1]
-            st.info(f"📊 Peak Activity Hour: {peak_time} ({hour_counts[peak_hour]} jobs)")
+
 
 @st.cache_data
 def getJobs(atomId, label):
@@ -190,10 +203,6 @@ def getJobs(atomId, label):
         
         # Show statistics dashboard
         show_job_statistics(df)
-        st.write("---")
-        
-        # Show operational insights
-        show_operational_insights(df)
         st.write("---")
         
         # Create tabs for different views
@@ -222,18 +231,18 @@ def getJobs(atomId, label):
             )
         
         with tab3:
-            # Recurring jobs view
+            # Recurring jobs timeline view
             if recurring_jobs:
-                st.subheader("Recurring/Continuous Jobs")
-                st.write("*Jobs that run frequently (>8 times/day or with step intervals)*")
+                create_recurring_timeline_view(recurring_jobs)
                 
-                recurring_df = pd.DataFrame(recurring_jobs)
-                st.dataframe(
-                    data=recurring_df.style.applymap(color_enabled, subset=['enabled']),
-                    column_order=('Name','enabled','hours','minutes','cron'),
-                    use_container_width=True,
-                    height=400
-                )
+                with st.expander("📋 Recurring Jobs Table View"):
+                    recurring_df = pd.DataFrame(recurring_jobs)
+                    st.dataframe(
+                        data=recurring_df.style.applymap(color_enabled, subset=['enabled']),
+                        column_order=('Name','enabled','hours','minutes','cron'),
+                        use_container_width=True,
+                        height=400
+                    )
             else:
                 st.info("No recurring jobs found")
 
