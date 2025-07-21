@@ -252,15 +252,15 @@ st.sidebar.title('🎛️ Environment Controls')
 col1, col2 = st.sidebar.columns(2)
 
 with col1:
-    if st.button('🏭 Production', type="primary", use_container_width=True):
-        df_prod = getJobs('3d78acc2-9f2b-41ff-bbfd-a3f2ed30c89e', 'Production Molecule')
+    if st.sidebar.button('🏭 Production', type="primary", use_container_width=True):
+        st.session_state.selected_env = 'prod'
 
 with col2:
-    if st.button('🧪 QA', type="secondary", use_container_width=True):
-        df_qa = getJobs('58e8640c-7dcd-44fc-8308-a1f0239fc789', 'QA Atom')
+    if st.sidebar.button('🧪 QA', type="secondary", use_container_width=True):
+        st.session_state.selected_env = 'qa'
 
 if st.sidebar.button('🏖️ Sandbox', type="secondary", use_container_width=True):
-    df_sandbox = getJobs('4e7219c4-fb66-40b5-ab23-0a5c9a32b5b1', 'Sandbox Atom')
+    st.session_state.selected_env = 'sandbox'
 
 st.sidebar.write("---")
 if st.sidebar.button('🗑️ Clear Cache', help="Clear cached API responses"):
@@ -281,8 +281,17 @@ with st.sidebar.expander("ℹ️ Help & Info"):
     **Time Format**: 12-hour format (AM/PM) in MST
     """)
 
-# Default view when no environment is selected
-if 'df_prod' not in locals() and 'df_qa' not in locals() and 'df_sandbox' not in locals():
+# Main content area - Display jobs based on selected environment
+if 'selected_env' not in st.session_state:
+    st.session_state.selected_env = None
+
+if st.session_state.selected_env == 'prod':
+    getJobs('3d78acc2-9f2b-41ff-bbfd-a3f2ed30c89e', 'Production Molecule')
+elif st.session_state.selected_env == 'qa':
+    getJobs('58e8640c-7dcd-44fc-8308-a1f0239fc789', 'QA Atom')
+elif st.session_state.selected_env == 'sandbox':
+    getJobs('4e7219c4-fb66-40b5-ab23-0a5c9a32b5b1', 'Sandbox Atom')
+else:
     st.info("👆 Select an environment from the sidebar to view scheduled jobs")
     
     # Show sample from CSV if available
