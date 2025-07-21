@@ -120,13 +120,13 @@ def create_timeline_view(jobs, job_type="Scheduled"):
         st.write(f"**{time_str}**")
         
         # Create columns for job status boxes
-        cols = st.columns(min(len(jobs_at_time), 4))
+        cols = st.columns(min(len(jobs_at_time), 3))
         
         for idx, job in enumerate(jobs_at_time):
-            col_idx = idx % 4
+            col_idx = idx % 3
             with cols[col_idx]:
                 status_color = "🟢" if is_job_enabled(job) else "🔴"
-                job_name = job['Name'][:30] + "..." if len(job['Name']) > 30 else job['Name']
+                job_name = job['Name'][:40] + "..." if len(job['Name']) > 40 else job['Name']
                 # Add full name as tooltip using title attribute
                 full_name = job['Name']
                 st.markdown(f'<div title="{full_name}">{status_color} {job_name}</div>', unsafe_allow_html=True)
@@ -138,50 +138,63 @@ def parse_recurring_pattern_description(job):
     hours_str = str(job.get('hours', '*'))
     minutes_str = str(job.get('minutes', '0'))
     
-    # Parse hour ranges
+    # Parse hour ranges - handle complex patterns like "7-7/1"
     if hours_str == '*' or hours_str == '0-23':
         hour_desc = "all day"
         start_hour = 0
         end_hour = 23
     elif '-' in hours_str:
-        parts = hours_str.split('-')
+        # Handle patterns like "7-7/1" or "15-22"
+        base_part = hours_str.split('/')[0] if '/' in hours_str else hours_str
+        parts = base_part.split('-')
         if len(parts) == 2:
-            start_hour = int(parts[0])
-            end_hour = int(parts[1])
-            
-            # Convert to 12-hour format for description
-            start_12h = format_time_12hour(start_hour, 0).split(':')[0] + format_time_12hour(start_hour, 0)[-2:]
-            end_12h = format_time_12hour(end_hour, 59).split(':')[0] + format_time_12hour(end_hour, 59)[-2:]
-            hour_desc = f"from {start_12h} to {end_12h}"
+            try:
+                start_hour = int(parts[0])
+                end_hour = int(parts[1])
+                
+                # Convert to 12-hour format for description
+                start_12h = format_time_12hour(start_hour, 0).split(':')[0] + format_time_12hour(start_hour, 0)[-2:]
+                end_12h = format_time_12hour(end_hour, 59).split(':')[0] + format_time_12hour(end_hour, 59)[-2:]
+                hour_desc = f"from {start_12h} to {end_12h}"
+            except ValueError:
+                # Fallback for unparseable patterns
+                hour_desc = f"during hours {hours_str}"
         else:
             hour_desc = f"during hours {hours_str}"
     else:
-        hour_desc = f"at {hours_str} o'clock"
+        try:
+            hour_val = int(hours_str)
+            hour_desc = f"at {hour_val} o'clock"
+        except ValueError:
+            hour_desc = f"during hours {hours_str}"
     
     # Parse minute patterns
     if minutes_str == '*':
         minute_desc = "every minute"
     elif '/' in minutes_str:
         # Handle patterns like "0-59/2", "0-59/30", etc.
-        base, interval = minutes_str.split('/')
-        interval = int(interval)
-        
-        if interval == 1:
-            minute_desc = "once a minute"
-        elif interval == 2:
-            minute_desc = "once every two minutes"
-        elif interval == 5:
-            minute_desc = "once every five minutes"
-        elif interval == 10:
-            minute_desc = "once every ten minutes"
-        elif interval == 15:
-            minute_desc = "once every fifteen minutes"
-        elif interval == 30:
-            minute_desc = "once every thirty minutes"
-        elif interval == 60:
-            minute_desc = "once an hour"
-        else:
-            minute_desc = f"once every {interval} minutes"
+        try:
+            base, interval = minutes_str.split('/')
+            interval = int(interval)
+            
+            if interval == 1:
+                minute_desc = "once a minute"
+            elif interval == 2:
+                minute_desc = "once every two minutes"
+            elif interval == 5:
+                minute_desc = "once every five minutes"
+            elif interval == 10:
+                minute_desc = "once every ten minutes"
+            elif interval == 15:
+                minute_desc = "once every fifteen minutes"
+            elif interval == 30:
+                minute_desc = "once every thirty minutes"
+            elif interval == 60:
+                minute_desc = "once an hour"
+            else:
+                minute_desc = f"once every {interval} minutes"
+        except ValueError:
+            minute_desc = f"with pattern {minutes_str}"
     elif '-' in minutes_str:
         # Handle ranges like "0-30"
         minute_desc = f"every minute during {minutes_str}"
@@ -194,7 +207,11 @@ def parse_recurring_pattern_description(job):
             minute_desc = f"at {len(mins)} specific times"
     else:
         # Single minute value
-        minute_desc = f"at minute {minutes_str}"
+        try:
+            min_val = int(minutes_str)
+            minute_desc = f"at minute {min_val}"
+        except ValueError:
+            minute_desc = f"with minute pattern {minutes_str}"
     
     # Combine descriptions intelligently
     if hour_desc == "all day":
