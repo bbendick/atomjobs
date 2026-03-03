@@ -362,9 +362,9 @@ def getJobs(atomId, label):
             # Original table view
             st.subheader("Complete Job Table")
             st.dataframe(
-                data=df.style.applymap(color_enabled, subset=['enabled']), 
-                column_order=('Name','enabled','id','hours','minutes','daysOfWeek','daysOfMonth','months','years','cron'), 
-                use_container_width=True, 
+                data=df.style.map(color_enabled, subset=['enabled']),
+                column_order=('Name','enabled','id','hours','minutes','daysOfWeek','daysOfMonth','months','years','cron'),
+                use_container_width=True,
                 height=600
             )
         
@@ -376,7 +376,7 @@ def getJobs(atomId, label):
                 with st.expander("📋 Recurring Jobs Table View"):
                     recurring_df = pd.DataFrame(recurring_jobs)
                     st.dataframe(
-                        data=recurring_df.style.applymap(color_enabled, subset=['enabled']),
+                        data=recurring_df.style.map(color_enabled, subset=['enabled']),
                         column_order=('Name','enabled','hours','minutes','cron'),
                         use_container_width=True,
                         height=400
